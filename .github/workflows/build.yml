@@ -1,0 +1,44 @@
+name: Build Native And Dex
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
+        with:
+          sdk-version: 34
+          ndk-version: 27.0.12077973
+
+      - name: Compile C++ to aarch64 .so
+        run: |
+          mkdir -p output
+          $ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++ \
+          -shared -fPIC -fvisibility=hidden \
+          -o output/libtotp-lib.so totp.cpp \
+          -I$ANDROID_NDK/sysroot/usr/include
+
+      - name: Compile Java class & build dex
+        run: |
+          mkdir -p classes
+          javac -d classes com/pjy/totp/TotpManager.java
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/d8 --output output/ classes/com/pjy/totp/*.class
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Totp-Build-Result
+          path: |
+            output/libtotp-lib.so
+            output/classes.dex
