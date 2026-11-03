@@ -15,19 +15,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Android NDK
-        uses: android-actions/setup-ndk@v1
+      - name: Setup Android SDK & NDK
+        uses: android-actions/setup-android@v3
         with:
-          ndk-version: r27c
-
-      - name: Download Android build-tools (d8)
-        run: |
-          mkdir -p android-sdk
-          cd android-sdk
-          wget -q https://dl.google.com/android/repository/build-tools_r34-linux.zip
-          unzip -q build-tools_r34-linux.zip
-          export ANDROID_BUILD_TOOLS=$PWD/android-sdk/34.0.0
-          echo "ANDROID_BUILD_TOOLS=$ANDROID_BUILD_TOOLS" >> $GITHUB_ENV
+          sdk-version: 34
+          packages: ndk;27.0.12077973,build-tools;34.0.0
+          accept-android-sdk-licenses: true
 
       - name: Compile C++ to aarch64 .so
         run: |
@@ -40,7 +33,7 @@ jobs:
         run: |
           mkdir -p classes
           javac -d classes com/pjy/totp/TotpManager.java
-          $ANDROID_BUILD_TOOLS/d8 --output output/ classes/com/pjy/totp/*.class
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/d8 --output output/ classes/com/pjy/totp/*.class
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
